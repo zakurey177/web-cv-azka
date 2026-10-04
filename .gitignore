@@ -1,0 +1,20 @@
+# System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archives & Temporary Backups
+*.rar
+*.zip
+*.7z
+*.tar.gz
+
+# Logs & Temporary Blender files
+*.blend1
+*.blend2
+@eaDir
+render_smes*.png
+
+# Node / Build artifacts (if any)
+node_modules/
+.vercel
