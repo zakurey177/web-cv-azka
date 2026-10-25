@@ -18,3 +18,7 @@ render_smes*.png
 # Node / Build artifacts (if any)
 node_modules/
 .vercel
+
+# Browser Saved Pages
+Projects & 3D Portfolio*
+

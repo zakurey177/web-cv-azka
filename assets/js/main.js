@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initThreeHeroCanvas();
   initTiltCards();
   initProjectsPage();
+  initScheduleSection();
+  initMapControls();
+  initAppMasteryTracker();
   initActiveNavLinks();
 });
 
@@ -521,3 +524,410 @@ window.closeModal = function() {
     document.body.style.overflow = '';
   }
 };
+
+/* ===================================================================
+   9. JADWAL PRAKTIKUM 3IA15 - INTERACTIVE CONTROLS
+   =================================================================== */
+function initScheduleSection() {
+  const scheduleSec = document.getElementById('jadwal');
+  if (!scheduleSec) return;
+
+  // 1. View Toggling (Table vs Cards)
+  const viewBtns = document.querySelectorAll('.schedule-view-btn');
+  const tableView = document.getElementById('schedule-table-view');
+  const cardsView = document.getElementById('schedule-cards-view');
+
+  viewBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      viewBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const mode = btn.getAttribute('data-view-mode');
+      if (mode === 'table') {
+        if (tableView) tableView.style.display = 'block';
+        if (cardsView) cardsView.style.display = 'none';
+      } else {
+        if (tableView) tableView.style.display = 'none';
+        if (cardsView) cardsView.style.display = 'grid';
+      }
+    });
+  });
+
+  // 2. Day Filter Pills
+  const filterPills = document.querySelectorAll('.schedule-filter-pill');
+  const tableRows = document.querySelectorAll('.schedule-table-row');
+  const dayCards = document.querySelectorAll('.schedule-day-column');
+
+  filterPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      filterPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+
+      const filter = pill.getAttribute('data-day-filter');
+
+      // Filter Table Rows
+      tableRows.forEach(row => {
+        const day = row.getAttribute('data-day');
+        if (filter === 'all' || day === filter) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      // Filter Day Cards
+      dayCards.forEach(card => {
+        const day = card.getAttribute('data-day');
+        if (filter === 'all' || day === filter) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // 3. Highlight Today's Schedule
+  const dayMap = {
+    2: 'selasa',
+    3: 'rabu',
+    5: 'jumat',
+    6: 'sabtu'
+  };
+  const currentDayIndex = new Date().getDay();
+  const todayKey = dayMap[currentDayIndex];
+
+  if (todayKey) {
+    // Highlight table rows for today
+    tableRows.forEach(row => {
+      if (row.getAttribute('data-day') === todayKey) {
+        row.classList.add('is-today');
+        const badge = row.querySelector('.schedule-day-badge');
+        if (badge && !badge.querySelector('.today-indicator-tag')) {
+          const tag = document.createElement('span');
+          tag.className = 'today-indicator-tag';
+          tag.style.cssText = 'background:var(--accent-ice-light); color:#070C1C; font-size:0.68rem; padding:2px 8px; border-radius:99px; margin-left:6px; font-weight:800; letter-spacing:0.5px;';
+          tag.textContent = 'HARI INI';
+          badge.appendChild(tag);
+        }
+      }
+    });
+
+    // Highlight day card for today
+    dayCards.forEach(card => {
+      if (card.getAttribute('data-day') === todayKey) {
+        card.style.borderColor = 'var(--accent-ice-light)';
+        card.style.boxShadow = '0 0 30px rgba(91, 192, 190, 0.35)';
+        const header = card.querySelector('.schedule-day-col-header');
+        if (header && !header.querySelector('.today-indicator-tag')) {
+          const tag = document.createElement('span');
+          tag.className = 'today-indicator-tag';
+          tag.style.cssText = 'background:rgba(255,255,255,0.25); color:#fff; font-size:0.72rem; padding:3px 8px; border-radius:99px; font-weight:700;';
+          tag.textContent = 'Hari Ini';
+          header.appendChild(tag);
+        }
+      }
+    });
+  }
+
+  // 4. Copy Schedule Button
+  const copyBtn = document.getElementById('copy-schedule-btn');
+  const toast = document.getElementById('schedule-toast');
+
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const scheduleText = `JADWAL PRAKTIKUM 3IA15
+Semester Ganjil PTA 2026/2027 • Universitas Gunadarma
+Semangat praktikumnya! :)
+
+[SELASA]
+• 07.30 – 09.30 WIB: PAA 3IA15 (Perancangan & Analisis Algoritma) - LAB F8427
+• 15.30 – 17.30 WIB: GK 3IA15 (Grafik Komputer) - LAB F8422
+
+[RABU]
+• 07.30 – 09.30 WIB: JK 3IA15 (Jaringan Komputer) - LAB H405
+• 09.30 – 11.30 WIB: IMK 3IA15 (Interaksi Manusia dan Komputer) - LAB H405
+
+[JUMAT]
+• 07.30 – 09.30 WIB: SBD1 3IA15 (Sistem Basis Data) - LAB H2
+
+[SABTU]
+• 13.30 – 15.30 WIB: PW 3IA15 (Pemrograman Web) - LAB H2
+
+Catatan: Jangan lupa cek lab & persiapannya!`;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(scheduleText).then(() => {
+          showScheduleToast('Jadwal berhasil disalin ke clipboard!');
+        }).catch(() => {
+          fallbackCopyText(scheduleText);
+        });
+      } else {
+        fallbackCopyText(scheduleText);
+      }
+    });
+  }
+
+  function fallbackCopyText(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      showScheduleToast('Jadwal berhasil disalin ke clipboard!');
+    } catch (err) {
+      alert('Gagal menyalin jadwal otomatis.');
+    }
+    document.body.removeChild(textarea);
+  }
+
+  function showScheduleToast(msg) {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2800);
+  }
+}
+
+/* ===================================================================
+   10. ADDRESS MAP IFRAME INTERACTIVE CONTROLS
+   =================================================================== */
+function initMapControls() {
+  const mapIframe = document.getElementById('address-map-iframe');
+  const themeBtn = document.getElementById('map-theme-btn');
+  const copyBtn = document.getElementById('copy-address-btn');
+  const toast = document.getElementById('schedule-toast');
+
+  // 1. Theme Toggle (Cyber Dark vs Standard)
+  if (themeBtn && mapIframe) {
+    let isDark = true;
+    themeBtn.addEventListener('click', () => {
+      isDark = !isDark;
+      if (isDark) {
+        mapIframe.classList.remove('map-light-theme');
+        mapIframe.classList.add('map-dark-theme');
+        themeBtn.innerHTML = `
+          <span class="theme-icon">🌙</span>
+          <span class="theme-label">Tema Web</span>
+        `;
+        themeBtn.title = 'Beralih ke tampilan standar';
+      } else {
+        mapIframe.classList.remove('map-dark-theme');
+        mapIframe.classList.add('map-light-theme');
+        themeBtn.innerHTML = `
+          <span class="theme-icon">☀️</span>
+          <span class="theme-label">Standar</span>
+        `;
+        themeBtn.title = 'Beralih ke tema gelap web';
+      }
+    });
+  }
+
+  // 2. Copy Address to Clipboard
+  if (copyBtn) {
+    const fullAddress = 'Kadumangu, Kec. Babakan Madang, Kabupaten Bogor, Jawa Barat 16810 (Koordinat: -6.553500, 106.862496)';
+    
+    copyBtn.addEventListener('click', () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullAddress).then(() => {
+          showMapToast('Alamat & koordinat berhasil disalin ke clipboard!');
+        }).catch(() => {
+          fallbackCopyAddress(fullAddress);
+        });
+      } else {
+        fallbackCopyAddress(fullAddress);
+      }
+    });
+  }
+
+  function fallbackCopyAddress(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      showMapToast('Alamat & koordinat berhasil disalin ke clipboard!');
+    } catch (err) {
+      alert('Gagal menyalin alamat otomatis.');
+    }
+    document.body.removeChild(textarea);
+  }
+
+  function showMapToast(msg) {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2800);
+  }
+}
+
+/* ===================================================================
+   11. INTERACTIVE APPLICATION MASTERY CHECKBOX TRACKER
+   =================================================================== */
+function initAppMasteryTracker() {
+  const trackerContainer = document.getElementById('app-mastery-tracker');
+  if (!trackerContainer) return;
+
+  const appCards = trackerContainer.querySelectorAll('.app-item-card');
+  const counterText = document.getElementById('app-mastered-counter');
+  const progressFill = document.getElementById('app-progress-fill');
+  const resetBtn = document.getElementById('reset-app-tracker-btn');
+  const toast = document.getElementById('schedule-toast');
+
+  const defaultState = {
+    'blender': true,
+    'premiere': true,
+    'excel': true,
+    'figma': false,
+    'flstudio': false
+  };
+
+  // Load saved state or default
+  let savedState = {};
+  try {
+    const raw = localStorage.getItem('azka_app_mastery');
+    if (raw) savedState = JSON.parse(raw);
+  } catch (e) {
+    savedState = {};
+  }
+
+  const getAppState = (id) => {
+    return savedState.hasOwnProperty(id) ? savedState[id] : defaultState[id];
+  };
+
+  // Update card UI state
+  const updateCardUI = (card, isChecked) => {
+    const input = card.querySelector('.app-checkbox-hidden');
+    const group = card.getAttribute('data-group');
+    const statusTag = card.querySelector('.app-status-tag');
+
+    if (input) input.checked = isChecked;
+
+    if (isChecked) {
+      card.classList.add('is-checked');
+      if (statusTag) {
+        if (group === 'mastered') {
+          statusTag.className = 'app-status-tag status-mastered-checked';
+          statusTag.textContent = '✅ Dikuasai';
+        } else {
+          statusTag.className = 'app-status-tag status-target-checked';
+          statusTag.textContent = '🌟 Dipelajari / Aktif';
+        }
+      }
+    } else {
+      card.classList.remove('is-checked');
+      if (statusTag) {
+        if (group === 'mastered') {
+          statusTag.className = 'app-status-tag status-unchecked';
+          statusTag.textContent = '⭕ Belum Dicentang';
+        } else {
+          statusTag.className = 'app-status-tag status-unchecked';
+          statusTag.textContent = '🎯 Target Ingin Dikuasai';
+        }
+      }
+    }
+  };
+
+  // Recalculate stats
+  const recalculateStats = () => {
+    const totalApps = appCards.length;
+    let checkedCount = 0;
+
+    appCards.forEach(card => {
+      const input = card.querySelector('.app-checkbox-hidden');
+      if (input && input.checked) checkedCount++;
+    });
+
+    const percentage = totalApps > 0 ? Math.round((checkedCount / totalApps) * 100) : 0;
+
+    if (counterText) {
+      counterText.textContent = `${checkedCount} dari ${totalApps} Aplikasi Dicentang (${percentage}%)`;
+    }
+    if (progressFill) {
+      progressFill.style.width = `${percentage}%`;
+    }
+  };
+
+  // Save current states
+  const saveStates = () => {
+    const current = {};
+    appCards.forEach(card => {
+      const id = card.getAttribute('data-app-id');
+      const input = card.querySelector('.app-checkbox-hidden');
+      if (id && input) {
+        current[id] = input.checked;
+      }
+    });
+    savedState = current;
+    try {
+      localStorage.setItem('azka_app_mastery', JSON.stringify(current));
+    } catch (e) {}
+  };
+
+  // Initialize each card
+  appCards.forEach(card => {
+    const id = card.getAttribute('data-app-id');
+    const isChecked = getAppState(id);
+    updateCardUI(card, isChecked);
+
+    // Toggle on click
+    card.addEventListener('click', (e) => {
+      // Prevent double trigger if clicking label/input directly
+      if (e.target.tagName.toLowerCase() === 'input') return;
+
+      const input = card.querySelector('.app-checkbox-hidden');
+      if (!input) return;
+
+      const newState = !input.checked;
+      updateCardUI(card, newState);
+      saveStates();
+      recalculateStats();
+
+      // Quick feedback toast
+      const appName = card.querySelector('.app-name')?.textContent || 'Aplikasi';
+      if (toast) {
+        toast.textContent = newState 
+          ? `✓ ${appName} berhasil dicentang!` 
+          : `○ Centang ${appName} dinonaktifkan.`;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+      }
+    });
+  });
+
+  recalculateStats();
+
+  // Reset button handler
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      appCards.forEach(card => {
+        const id = card.getAttribute('data-app-id');
+        const defaultVal = !!defaultState[id];
+        updateCardUI(card, defaultVal);
+      });
+      saveStates();
+      recalculateStats();
+
+      if (toast) {
+        toast.textContent = 'Pengaturan centang aplikasi dikembalikan ke default!';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+      }
+    });
+  }
+}
+
+
+
